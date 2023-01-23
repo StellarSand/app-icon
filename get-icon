@@ -52,7 +52,7 @@ Description:
 Get icon URLs of apps from Google Play Store.
 
 Options:
-  -h, --help            Show this help message
+  -h, --help            Show this help message and exit
   -f, --file            Write output to a specified file
   -p, --parallel        Retrieve multiple icons in parallel (Check note below)
   -W, --Width           Specify a width for the icon (requires -H/--Height too)
@@ -64,7 +64,7 @@ get-icon com.android.twitter com.spotify.music org.telegram.messenger
 get-icon com.spotify.music -W 480 -H 960
 
 NOTE:
-If -p/--parallel option is used, multiple icon URLs will be retrieved in parallel,
+If -p/--parallel option is used, multiple icon URLs will be retrieved in parallel.
 This will be faster, however, it might use a lot of system resources if too many packages are provided.
 
 EOF
