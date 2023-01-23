@@ -23,7 +23,7 @@ git clone https://github.com/the-weird-aquarian/get-icon.git
 cd get-icon
 ```
 
-**3. Give executable permissions to the install script:**
+**3. Give executable permissions to the script:**
 ```
 chmod +x get-icon
 ```
