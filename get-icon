@@ -197,7 +197,7 @@ then
     exit 1
 fi
 
-echo -e "\nFetching icons ...\n"
+echo -e "\nRetrieving icons ...\n"
 for package in "${package_names[@]}"
 do
     scrape_file="/tmp/scrape_$package"
