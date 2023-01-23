@@ -1,0 +1,219 @@
+#!/usr/bin/env bash
+
+# Copyright (c) 2023 the-weird-aquarian
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+chkPackage(){
+    if ! (command -v "$1" > /dev/null)
+    then
+        echo -e "\n$1 package does not exist. Please install it first and try again."
+        echo -e "Exiting script ...\n"
+        exit 1
+    fi
+}
+
+successFail() {
+    if [ $? -eq 0 ]
+    then
+        echo -e "Done.\n"
+    else
+        echo -e "Some error occurred performing the task.\n"
+        exit 1
+    fi
+}
+
+# Show usage
+usage() {
+cat << EOF
+
+Usage:
+get-icon <package>
+get-icon <package1> <package2> <package3>
+get-icon <package> -f <file>
+
+Description:
+Get icon URLs of apps from Google Play Store.
+
+Options:
+  -h, --help            Show this help message
+  -f, --file            Write output to a specified file
+  -p, --parallel        Retrieve multiple icons in parallel (Check note below)
+  -W, --Width           Specify a width for the icon (requires -H/--Height too)
+  -H, --Height          Specify a height for the icon (requires -W/--Width too)
+
+Examples:
+get-icon com.android.twitter
+get-icon com.android.twitter com.spotify.music org.telegram.messenger
+get-icon com.spotify.music -W 480 -H 960
+
+NOTE:
+If -p/--parallel option is used, multiple icon URLs will be retrieved in parallel,
+This will be faster, however, it might use a lot of system resources if too many packages are provided.
+
+EOF
+}
+
+# Remove temporary files
+cleanup() {
+    rm "$scrape_file"
+}
+
+getIconURL(){
+    curl -s "$url$1" > "$scrape_file"
+
+    icon_url=$(while read -r
+               do
+                 awk 'match($0, /https:\/\/play-lh[^"]*/){print substr($0, RSTART, RLENGTH)}' |
+                 head -1
+               done < "$scrape_file")
+               # $0 => input string to search
+               # /https:\/\/play-lh[^"]*/ => search for https://play-lh
+               # [^"] => followed by any char that's not a double quote
+               # * => zero or more times
+               # RSTART => position of the match
+               # RLENGTH => length of match in input string
+
+    if [ "$width" -ne 0 ] && [ "$height" -ne 0 ]
+    then
+        icon_url="$icon_url=w$width-h$height"
+    fi
+
+    if [ -n "$file_path" ]
+    then
+        echo -e "\nIcon URL of $1:\n$icon_url" >> "$file_path"
+    else
+        echo -e "\nIcon URL of $1:\n$icon_url"
+    fi
+
+    cleanup
+}
+
+chkPackage "curl"
+chkPackage "awk"
+chkPackage "head"
+
+scrape_file=""
+url="https://play.google.com/store/apps/details?id="
+file_path=""
+is_parallel=false
+width=0
+height=0
+has_width=false
+has_height=false
+
+if [ $# -eq 0 ]
+then
+    usage
+    exit 0
+fi
+
+while [ $# -gt 0 ]
+do
+    case "$1" in
+
+    -h | --help)
+        usage
+        exit 0
+    ;;
+
+    -f | --file)
+        if [ ! -f "$2" ]
+        then
+            touch "$2"
+        fi
+        file_path=$2
+        shift
+    ;;
+
+    -p | --parallel)
+        is_parallel=true
+    ;;
+
+    -W | --Width)
+        if [ "$2" -ne 0 ]
+        then
+            width=$2
+            has_width=true
+            shift
+        else
+            echo -e "\nPlease provide a valid width.\nExiting script ...\n"
+            exit 1
+        fi
+    ;;
+
+    -H | --Height)
+        if [ "$2" -ne 0 ]
+        then
+            height=$2
+            has_height=true
+            shift
+        else
+            echo -e "\nPlease provide a valid height.\nExiting script ...\n"
+            exit 1
+        fi
+    ;;
+
+    -*)
+        echo -e "\nInvalid option: $1"
+        echo -e "Try 'get-icons -h' for more information.\n"
+        exit 1
+    ;;
+
+    *)
+        package_names+=("$1")
+    ;;
+    
+    esac
+    shift
+
+done
+
+if $has_width && ! $has_height
+then
+    echo -e "\n-W/--Width must be used along with -H/--Height."
+    echo -e "Exiting script ...\n"
+    exit 1
+elif $has_height && ! $has_width
+then
+    echo -e "\n-H/--Height must be used along with -W/--Width."
+    echo -e "Exiting script ...\n"
+    exit 1
+fi
+
+echo -e "\nFetching icons ...\n"
+for package in "${package_names[@]}"
+do
+    scrape_file="/tmp/scrape_$package"
+    if $is_parallel
+    then
+        getIconURL "$package" &
+    else
+        getIconURL "$package"
+    fi  
+done
+
+if $is_parallel
+then
+    wait
+fi
+
+successFail
+
+exit 0
