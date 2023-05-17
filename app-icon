@@ -39,33 +39,103 @@ successFail() {
     fi
 }
 
+chkResponseCode() {
+    response_code=$(curl -s -o /dev/null -w "%{http_code}" "$1")
+     [[ "$response_code" != 404 ]]
+}
+
+appExists() {
+    google_play_url="https://play.google.com/store/apps/details?id="
+    fdroid_url="https://f-droid.org/en/packages/"
+
+    if chkResponseCode "$google_play_url$1/"
+    then
+        is_on_google_play=true
+        url="$google_play_url$1/"
+    elif chkResponseCode "$fdroid_url$1/"
+    then
+        is_on_fdroid=true
+        url="$fdroid_url$1/"
+    else
+        echo -e "$1 doesn't exist on Google Play and F-Droid.\n"
+    fi
+}
+
+getIconFromGooglePlay() {
+    icon_url=$(while read -r
+                do
+                    awk 'match($0, /https:\/\/play-lh[^"]*/){print substr($0, RSTART, RLENGTH)}' |
+                    head -1
+                done < "$scrape_file")
+                # $0 => current line
+                # /https:\/\/play-lh[^"]*/ => search for https://play-lh
+                # [^"] => followed by any char that's not a double quote
+                # * => zero or more times
+                # RSTART => position of the match
+                # RLENGTH => length of match in input string
+
+        if [ "$width" -ne 0 ] && [ "$height" -ne 0 ]
+        then
+            icon_url="$icon_url=w$width-h$height"
+        fi
+
+        if [ -n "$file_path" ]
+        then
+            echo -e "$1 icon:\n$icon_url" >> "$file_path\n"
+        else
+            echo -e "$1 icon:\n$icon_url\n"
+        fi
+}
+
+getIconFromFdroid() {
+    icon_url=$(while read -r
+                do
+                    awk -v package="$1" 'match($0, "https://f-droid.org/repo/" package "/en-US/icon_[^\"]*"){print substr($0, RSTART, RLENGTH)}' |
+                    head -1
+                done < "$scrape_file")
+                # $0 => current line
+                # https://f-droid.org/repo/" package "/en-US/icon_[^"]*/ => search for https://f-droid.org/repo/package/en-US/icon_
+                # [^\"] => followed by any char that's not a double quote
+                # * => zero or more times
+                # RSTART => position of the match
+                # RLENGTH => length of match in input string
+
+        if [ -n "$file_path" ]
+        then
+            echo -e "$1 icon:\n$icon_url" >> "$file_path\n"
+        else
+            echo -e "$1 icon:\n$icon_url\n"
+        fi
+}
+
 # Show usage
 usage() {
 cat << EOF
 
 Usage:
-get-icon <package>
-get-icon <package1> <package2> <package3>
-get-icon <package> -f <file>
+app-icon <package>
+app-icon <package1> <package2> <package3>
+app-icon <package> -f <file>
 
 Description:
-Get icon URLs of apps from Google Play Store.
+Get icon URLs of apps from Google Play or F-Droid.
 
 Options:
   -h, --help            Show this help message and exit
-  -f, --file            Write output to a specified file
+  -o, --output          Write output to a specified file
   -p, --parallel        Retrieve multiple icons in parallel (Check note below)
   -W, --Width           Specify a width for the icon (requires -H/--Height too)
   -H, --Height          Specify a height for the icon (requires -W/--Width too)
 
-Examples:
-get-icon com.android.twitter
-get-icon com.android.twitter com.spotify.music org.telegram.messenger
-get-icon com.spotify.music -W 480 -H 960
-
 NOTE:
-If -p/--parallel option is used, multiple icon URLs will be retrieved in parallel.
+1. -W/--width and -H/--height options are only valid for Google Play URLs.
+2. If -p/--parallel option is used, multiple icon URLs will be retrieved in parallel.
 This will be faster, however, it might use a lot of system resources if too many packages are provided.
+
+Examples:
+app-icon com.android.twitter
+app-icon com.android.twitter com.spotify.music org.telegram.messenger
+app-icon com.spotify.music -W 480 -H 960
 
 EOF
 }
@@ -75,31 +145,17 @@ cleanup() {
     rm "$scrape_file"
 }
 
-getIconURL(){
-    curl -s "$url$1" > "$scrape_file"
+appIconURL(){
+    appExists "$1"
+    
+    curl -s "$url" > "$scrape_file"
 
-    icon_url=$(while read -r
-               do
-                 awk 'match($0, /https:\/\/play-lh[^"]*/){print substr($0, RSTART, RLENGTH)}' |
-                 head -1
-               done < "$scrape_file")
-               # $0 => input string to search
-               # /https:\/\/play-lh[^"]*/ => search for https://play-lh
-               # [^"] => followed by any char that's not a double quote
-               # * => zero or more times
-               # RSTART => position of the match
-               # RLENGTH => length of match in input string
-
-    if [ "$width" -ne 0 ] && [ "$height" -ne 0 ]
+    if $is_on_google_play
     then
-        icon_url="$icon_url=w$width-h$height"
-    fi
-
-    if [ -n "$file_path" ]
+        getIconFromGooglePlay "$1"
+    elif $is_on_fdroid
     then
-        echo -e "\nIcon URL of $1:\n$icon_url" >> "$file_path"
-    else
-        echo -e "\nIcon URL of $1:\n$icon_url"
+        getIconFromFdroid "$1"
     fi
 
     cleanup
@@ -110,7 +166,9 @@ chkPackage "awk"
 chkPackage "head"
 
 scrape_file=""
-url="https://play.google.com/store/apps/details?id="
+is_on_google_play=false
+is_on_fdroid=false
+url=""
 file_path=""
 is_parallel=false
 width=0
@@ -133,7 +191,7 @@ do
         exit 0
     ;;
 
-    -f | --file)
+    -o | --output)
         if [ ! -f "$2" ]
         then
             touch "$2"
@@ -172,7 +230,7 @@ do
 
     -*)
         echo -e "\nInvalid option: $1"
-        echo -e "Try 'get-icons -h' for more information.\n"
+        echo -e "Try 'app-icons -h' for more information.\n"
         exit 1
     ;;
 
@@ -203,9 +261,9 @@ do
     scrape_file="/tmp/scrape_$package"
     if $is_parallel
     then
-        getIconURL "$package" &
+        appIconURL "$package" &
     else
-        getIconURL "$package"
+        appIconURL "$package"
     fi  
 done
 

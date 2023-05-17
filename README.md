@@ -1,5 +1,5 @@
-# get-icon
-A command-line tool to retrieve icon URLs of apps from [Google Play Store website](https://play.google.com/).
+# app-icon
+A command-line tool to retrieve icon URLs of apps from [Google Play](https://play.google.com/) or [F-Droid](https://f-droid.org/en/packages/).
 
 
 
@@ -15,17 +15,17 @@ A command-line tool to retrieve icon URLs of apps from [Google Play Store websit
 ## Installation
 **1. Clone this repo:**
 ```
-git clone https://github.com/the-weird-aquarian/get-icon.git
+git clone https://github.com/the-weird-aquarian/app-icon.git
 ```
 
 **2. Move into the project directory:**
 ```
-cd get-icon
+cd app-icon
 ```
 
 **3. Give executable permissions to the script:**
 ```
-chmod +x get-icon
+chmod +x app-icon
 ```
 
 
@@ -33,48 +33,51 @@ chmod +x get-icon
 ## Available options
 ```
   -h, --help            Show this help message
-  -f, --file            Write output to a specified file
+  -o, --output          Write output to a specified file
   -p, --parallel        Retrieve multiple icons in parallel (Check note below)
   -W, --Width           Specify a width for the icon (requires -H/--Height too)
   -H, --Height          Specify a height for the icon (requires -W/--Width too)
 ```
 
-**NOTE:** If `-p/--parallel` option is used, multiple icon URLs will be retrieved in parallel. This will be faster, however, it might use a lot of system resources if too many packages are provided.
+**NOTE:** 
+1. `-W/--width` and `-H/--height` options are only valid for Google Play URLs.
+2. If `-p/--parallel` option is used, multiple icon URLs will be retrieved in parallel.
+This will be faster, however, it might use a lot of system resources if too many packages are provided.
 
 
 
 ## Usage
 ```
-get-icon <package>
+app-icon <package>
 ```
 ```
-get-icon <package1> <package2> <package3>
+app-icon <package1> <package2> <package3>
 ```
 
-The output can be written to a specified file using the `-f` or `--file` option:
+The output can be written to a specified file using the `-o` or `--output` option:
 ```
-get-icon <package> -f <file>
+app-icon <package> -o <file>
 ```
 
 **Examples:**
 ```
-get-icon com.android.twitter
+app-icon com.android.twitter
 ```
 
 ```
-get-icon com.android.twitter com.spotify.music org.telegram.messenger
+app-icon com.android.twitter com.spotify.music org.telegram.messenger
 ```
 
-By default the icons will be 512x512 px. To change the dimensions, use `-W` and `-H`:
+By default, the icons from Google Play will be 512x512 px. To change the dimensions, use `-W` and `-H`:
 ```
-get-icon com.spotify.music -W 480 -H 960
+app-icon com.spotify.music -W 480 -H 960
 ```
 
 
 
 ## Contributing
-Pull requests can be submitted [here](https://github.com/the-weird-aquarian/get-icon/pulls). Any contribution to the project will be highly appreciated.
+Pull requests can be submitted [here](https://github.com/the-weird-aquarian/app-icon/pulls). Any contribution to the project will be highly appreciated.
 
 
 ## License
-This project is licensed under the [MIT License](https://github.com/the-weird-aquarian/get-icon/blob/main/LICENSE).
+This project is licensed under the [MIT License](https://github.com/the-weird-aquarian/app-icon/blob/main/LICENSE).
