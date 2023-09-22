@@ -15,7 +15,7 @@ A command-line tool to retrieve icon URLs of apps from [Google Play](https://pla
 ## Installation
 **1. Clone this repo:**
 ```
-git clone https://github.com/the-weird-aquarian/app-icon.git
+git clone https://github.com/StellarSand/app-icon.git
 ```
 
 **2. Move into the project directory:**
@@ -76,8 +76,8 @@ app-icon com.spotify.music -W 480 -H 960
 
 
 ## Contributing
-Pull requests can be submitted [here](https://github.com/the-weird-aquarian/app-icon/pulls). Any contribution to the project will be highly appreciated.
+Pull requests can be submitted [here](https://github.com/StellarSand/app-icon/pulls). Any contribution to the project will be highly appreciated.
 
 
 ## License
-This project is licensed under the [MIT License](https://github.com/the-weird-aquarian/app-icon/blob/main/LICENSE).
+This project is licensed under the [MIT License](https://github.com/StellarSand/app-icon/blob/main/LICENSE).
